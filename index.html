@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Live Player</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #111;
+      color: white;
+      padding: 30px;
+    }
+
+    input {
+      width: 60%;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    iframe {
+      margin-top: 20px;
+      width: 80%;
+      height: 450px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>YouTube Live Stream Player</h2>
+
+  <input type="text" id="ytlink" placeholder="Paste YouTube Live Link Here">
+  <button onclick="playLive()">Play</button>
+
+  <div id="player"></div>
+
+  <script>
+  function extractVideoID(url) {
+    try {
+      const parsedUrl = new URL(url);
+
+      // Case 1: youtube.com/watch?v=
+      if (parsedUrl.searchParams.get("v")) {
+        return parsedUrl.searchParams.get("v");
+      }
+
+      // Case 2: youtu.be/
+      if (parsedUrl.hostname.includes("youtu.be")) {
+        return parsedUrl.pathname.slice(1);
+      }
+
+      // Case 3: youtube.com/live/
+      if (parsedUrl.pathname.includes("/live/")) {
+        return parsedUrl.pathname.split("/live/")[1].split("?")[0];
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function playLive() {
+    const url = document.getElementById("ytlink").value.trim();
+    const videoID = extractVideoID(url);
+
+    if (!videoID) {
+      alert("Invalid YouTube link!");
+      return;
+    }
+
+    document.getElementById("player").innerHTML =
+      `<iframe 
+        width="800" 
+        height="450"
+        src="https://www.youtube.com/embed/${videoID}?autoplay=1"
+        allow="autoplay; encrypted-media"
+        allowfullscreen>
+      </iframe>`;
+  }
+</script>
+
+</body>
+</html>
