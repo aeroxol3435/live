@@ -1,89 +1,170 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>YouTube Live Player</title>
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #111;
-      color: white;
-      padding: 30px;
-    }
+<meta charset="UTF-8">
+<title>YouTube Live Player Pro</title>
 
-    input {
-      width: 60%;
-      padding: 10px;
-      font-size: 16px;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f0f0f;
+  color: white;
+}
 
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+header {
+  padding: 15px;
+  background: #181818;
+  display: flex;
+  gap: 10px;
+}
 
-    iframe {
-      margin-top: 20px;
-      width: 80%;
-      height: 450px;
-      border: none;
-    }
-  </style>
+input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+}
+
+button {
+  padding: 10px 15px;
+  background: red;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#main {
+  display: flex;
+}
+
+#left {
+  flex: 3;
+  padding: 15px;
+}
+
+#right {
+  flex: 1;
+  background: #181818;
+  overflow-y: auto;
+  height: 90vh;
+}
+
+.video-item {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #333;
+}
+
+.video-item:hover {
+  background: #222;
+}
+
+iframe {
+  width: 100%;
+  height: 500px;
+  border-radius: 10px;
+}
+</style>
 </head>
+
 <body>
 
-  <h2>YouTube Live Stream Player</h2>
+<header>
+  <input type="text" id="searchInput" placeholder="Search YouTube or paste link...">
+  <button onclick="handleInput()">Go</button>
+</header>
 
-  <input type="text" id="ytlink" placeholder="Paste YouTube Live Link Here">
-  <button onclick="playLive()">Play</button>
+<div id="main">
+  <div id="left">
+    <div id="player"></div>
+    <div id="chat"></div>
+    <div id="comments"></div>
+  </div>
+  <div id="right"></div>
+</div>
 
-  <div id="player"></div>
+<script>
+const API_KEY = "AIzaSyC3TDNjA5SaaGDeAfW7guwbcafIXVWczCs";
 
-  <script>
-  function extractVideoID(url) {
-    try {
-      const parsedUrl = new URL(url);
+function extractVideoID(url) {
+  try {
+    const u = new URL(url);
 
-      // Case 1: youtube.com/watch?v=
-      if (parsedUrl.searchParams.get("v")) {
-        return parsedUrl.searchParams.get("v");
-      }
+    if (u.searchParams.get("v")) return u.searchParams.get("v");
+    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
+    if (u.pathname.includes("/live/")) return u.pathname.split("/live/")[1];
+    if (u.pathname.includes("/shorts/")) return u.pathname.split("/shorts/")[1];
 
-      // Case 2: youtu.be/
-      if (parsedUrl.hostname.includes("youtu.be")) {
-        return parsedUrl.pathname.slice(1);
-      }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
-      // Case 3: youtube.com/live/
-      if (parsedUrl.pathname.includes("/live/")) {
-        return parsedUrl.pathname.split("/live/")[1].split("?")[0];
-      }
+function handleInput() {
+  const input = document.getElementById("searchInput").value.trim();
 
-      return null;
-    } catch {
-      return null;
-    }
+  if (input.includes("youtube.com") || input.includes("youtu.be")) {
+    const id = extractVideoID(input);
+    if (id) loadVideo(id);
+  } else {
+    searchYouTube(input);
+  }
+}
+
+function loadVideo(videoId) {
+  document.getElementById("player").innerHTML =
+    `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>`;
+
+  document.getElementById("chat").innerHTML =
+    `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${location.hostname}" 
+     width="100%" height="400"></iframe>`;
+
+  loadComments(videoId);
+}
+
+async function searchYouTube(query) {
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${query}&key=${API_KEY}`
+  );
+
+  const data = await res.json();
+  const container = document.getElementById("right");
+  container.innerHTML = "";
+
+  data.items.forEach(video => {
+    const div = document.createElement("div");
+    div.className = "video-item";
+    div.innerHTML = `
+      <img src="${video.snippet.thumbnails.medium.url}" width="100%">
+      <p>${video.snippet.title}</p>
+    `;
+    div.onclick = () => loadVideo(video.id.videoId);
+    container.appendChild(div);
+  });
+}
+
+async function loadComments(videoId) {
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=10&key=${API_KEY}`
+  );
+
+  const data = await res.json();
+  const commentsDiv = document.getElementById("comments");
+  commentsDiv.innerHTML = "<h3>Comments</h3>";
+
+  if (!data.items) {
+    commentsDiv.innerHTML += "<p>Comments disabled.</p>";
+    return;
   }
 
-  function playLive() {
-    const url = document.getElementById("ytlink").value.trim();
-    const videoID = extractVideoID(url);
-
-    if (!videoID) {
-      alert("Invalid YouTube link!");
-      return;
-    }
-
-    document.getElementById("player").innerHTML =
-      `<iframe 
-        width="800" 
-        height="450"
-        src="https://www.youtube.com/embed/${videoID}?autoplay=1"
-        allow="autoplay; encrypted-media"
-        allowfullscreen>
-      </iframe>`;
-  }
+  data.items.forEach(c => {
+    const text = c.snippet.topLevelComment.snippet.textDisplay;
+    commentsDiv.innerHTML += `<p style="border-bottom:1px solid #333;padding:5px;">${text}</p>`;
+  });
+}
 </script>
 
 </body>
