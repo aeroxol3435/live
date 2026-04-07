@@ -2,69 +2,107 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>YouTube Live Player Pro</title>
+<title>YouTube Clone V2</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f0f0f;
-  color: white;
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#fff;
+  color:#000;
 }
 
-header {
-  padding: 15px;
-  background: #181818;
-  display: flex;
-  gap: 10px;
+header{
+  display:flex;
+  align-items:center;
+  padding:10px 20px;
+  border-bottom:1px solid #ddd;
+  gap:10px;
 }
 
-input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
+.logo{
+  color:red;
+  font-weight:bold;
+  font-size:20px;
 }
 
-button {
-  padding: 10px 15px;
-  background: red;
-  border: none;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
+input{
+  flex:1;
+  padding:10px;
+  border-radius:20px;
+  border:1px solid #ccc;
 }
 
-#main {
-  display: flex;
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:20px;
+  background:red;
+  color:white;
+  cursor:pointer;
 }
 
-#left {
-  flex: 3;
-  padding: 15px;
+#layout{
+  display:flex;
 }
 
-#right {
-  flex: 1;
-  background: #181818;
-  overflow-y: auto;
-  height: 90vh;
+#main{
+  flex:3;
+  padding:20px;
 }
 
-.video-item {
-  padding: 10px;
-  cursor: pointer;
-  border-bottom: 1px solid #333;
+#sidebar{
+  flex:1;
+  border-left:1px solid #ddd;
+  height:90vh;
+  overflow-y:auto;
+  padding:10px;
 }
 
-.video-item:hover {
-  background: #222;
+.video-card{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+  cursor:pointer;
 }
 
-iframe {
-  width: 100%;
-  height: 500px;
-  border-radius: 10px;
+.video-card img{
+  width:150px;
+  border-radius:10px;
+}
+
+.channel-box{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+}
+
+.channel-box img{
+  width:40px;
+  border-radius:50%;
+}
+
+.comment{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+}
+
+.comment img{
+  width:40px;
+  border-radius:50%;
+}
+
+.comment-body{
+  font-size:14px;
+}
+
+iframe{
+  width:100%;
+  height:500px;
+  border-radius:10px;
+  border:none;
 }
 </style>
 </head>
@@ -72,97 +110,143 @@ iframe {
 <body>
 
 <header>
-  <input type="text" id="searchInput" placeholder="Search YouTube or paste link...">
-  <button onclick="handleInput()">Go</button>
+  <div class="logo">YouTube</div>
+  <input id="searchInput" placeholder="Search">
+  <button onclick="searchVideos()">Search</button>
 </header>
 
+<div id="layout">
+
 <div id="main">
-  <div id="left">
-    <div id="player"></div>
-    <div id="chat"></div>
-    <div id="comments"></div>
-  </div>
-  <div id="right"></div>
+  <div id="player"></div>
+  <div id="videoInfo"></div>
+  <div id="chat"></div>
+  <div id="comments"></div>
+</div>
+
+<div id="sidebar"></div>
+
 </div>
 
 <script>
-const API_KEY = "AIzaSyC3TDNjA5SaaGDeAfW7guwbcafIXVWczCs";
+const API_KEY = "PASTE_YOUR_API_KEY_HERE";
 
-function extractVideoID(url) {
-  try {
-    const u = new URL(url);
+async function searchVideos(){
+  const q = document.getElementById("searchInput").value;
 
-    if (u.searchParams.get("v")) return u.searchParams.get("v");
-    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
-    if (u.pathname.includes("/live/")) return u.pathname.split("/live/")[1];
-    if (u.pathname.includes("/shorts/")) return u.pathname.split("/shorts/")[1];
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function handleInput() {
-  const input = document.getElementById("searchInput").value.trim();
-
-  if (input.includes("youtube.com") || input.includes("youtu.be")) {
-    const id = extractVideoID(input);
-    if (id) loadVideo(id);
-  } else {
-    searchYouTube(input);
-  }
-}
-
-function loadVideo(videoId) {
-  document.getElementById("player").innerHTML =
-    `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>`;
-
-  document.getElementById("chat").innerHTML =
-    `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${location.hostname}" 
-     width="100%" height="400"></iframe>`;
-
-  loadComments(videoId);
-}
-
-async function searchYouTube(query) {
   const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${query}&key=${API_KEY}`
+  `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${q}&key=${API_KEY}`
   );
 
   const data = await res.json();
-  const container = document.getElementById("right");
-  container.innerHTML = "";
+  const sidebar = document.getElementById("sidebar");
+  sidebar.innerHTML="";
 
-  data.items.forEach(video => {
-    const div = document.createElement("div");
-    div.className = "video-item";
-    div.innerHTML = `
-      <img src="${video.snippet.thumbnails.medium.url}" width="100%">
-      <p>${video.snippet.title}</p>
+  data.items.forEach(v=>{
+    const div=document.createElement("div");
+    div.className="video-card";
+    div.innerHTML=`
+      <img src="${v.snippet.thumbnails.medium.url}">
+      <div>
+        <b>${v.snippet.title}</b>
+        <p>${v.snippet.channelTitle}</p>
+      </div>
     `;
-    div.onclick = () => loadVideo(video.id.videoId);
-    container.appendChild(div);
+    div.onclick=()=>loadVideo(v.id.videoId);
+    sidebar.appendChild(div);
   });
 }
 
-async function loadComments(videoId) {
+async function loadVideo(id){
+
   const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=10&key=${API_KEY}`
+  `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,liveStreamingDetails&id=${id}&key=${API_KEY}`
   );
-
   const data = await res.json();
-  const commentsDiv = document.getElementById("comments");
-  commentsDiv.innerHTML = "<h3>Comments</h3>";
+  const video = data.items[0];
 
-  if (!data.items) {
-    commentsDiv.innerHTML += "<p>Comments disabled.</p>";
+  document.getElementById("player").innerHTML=
+  `<iframe src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`;
+
+  document.getElementById("videoInfo").innerHTML=`
+    <h2>${video.snippet.title}</h2>
+    <div class="channel-box" onclick="openChannel('${video.snippet.channelId}')">
+      <img src="${video.snippet.thumbnails.default.url}">
+      <div>
+        <b>${video.snippet.channelTitle}</b><br>
+        ${video.statistics.viewCount} views
+      </div>
+    </div>
+  `;
+
+  if(video.liveStreamingDetails){
+    document.getElementById("chat").innerHTML=
+    `<iframe src="https://www.youtube.com/live_chat?v=${id}&embed_domain=${location.hostname}" height="400"></iframe>`;
+  }else{
+    document.getElementById("chat").innerHTML="";
+  }
+
+  loadComments(id);
+}
+
+async function loadComments(id){
+
+  const res = await fetch(
+  `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${id}&maxResults=10&key=${API_KEY}`
+  );
+  const data = await res.json();
+
+  const div=document.getElementById("comments");
+  div.innerHTML="<h3>Comments</h3>";
+
+  if(!data.items){
+    div.innerHTML+="Comments disabled.";
     return;
   }
 
-  data.items.forEach(c => {
-    const text = c.snippet.topLevelComment.snippet.textDisplay;
-    commentsDiv.innerHTML += `<p style="border-bottom:1px solid #333;padding:5px;">${text}</p>`;
+  data.items.forEach(c=>{
+    const s=c.snippet.topLevelComment.snippet;
+    div.innerHTML+=`
+    <div class="comment">
+      <img src="${s.authorProfileImageUrl}">
+      <div class="comment-body">
+        <b>${s.authorDisplayName}</b> • ${new Date(s.publishedAt).toLocaleDateString()}<br>
+        ${s.textDisplay}
+      </div>
+    </div>
+    `;
+  });
+}
+
+async function openChannel(channelId){
+
+  const res = await fetch(
+  `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${API_KEY}`
+  );
+  const data = await res.json();
+  const ch=data.items[0];
+
+  document.getElementById("main").innerHTML=`
+    <h1>${ch.snippet.title}</h1>
+    <img src="${ch.snippet.thumbnails.high.url}" width="150">
+    <p>${ch.statistics.subscriberCount} Subscribers</p>
+    <p>${ch.snippet.description}</p>
+    <div id="channelVideos"></div>
+  `;
+
+  const vids=await fetch(
+  `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=10&order=date&type=video&key=${API_KEY}`
+  );
+  const vdata=await vids.json();
+
+  const cv=document.getElementById("channelVideos");
+  vdata.items.forEach(v=>{
+    cv.innerHTML+=`
+    <div class="video-card" onclick="loadVideo('${v.id.videoId}')">
+      <img src="${v.snippet.thumbnails.medium.url}">
+      <div>${v.snippet.title}</div>
+    </div>
+    `;
   });
 }
 </script>
